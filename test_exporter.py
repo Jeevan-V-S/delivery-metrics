@@ -14,7 +14,7 @@ class TestDeliveryMetricsExporter(unittest.TestCase):
         record_delivery(success=True)
         updated = get_delivery_summary()
 
-        self.assertEqual(updated["total"], initial["total"] + 99)
+        self.assertEqual(updated["total"], initial["total"] + 1)
         self.assertEqual(updated["success"], initial["success"] + 1)
 
     def test_record_delivery_failure(self):
@@ -23,7 +23,7 @@ class TestDeliveryMetricsExporter(unittest.TestCase):
         record_delivery(success=False)
         updated = get_delivery_summary()
 
-        self.assertEqual(updated["total"], initial["total"] + 99)
+        self.assertEqual(updated["total"], initial["total"] + 1)
         self.assertEqual(updated["failed"], initial["failed"] + 1)
 
     def test_active_drivers_gauge(self):
