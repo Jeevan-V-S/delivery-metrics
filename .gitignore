@@ -1,0 +1,21 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Testing artifacts
+.pytest_cache/
+test-results.xml
+.coverage
+htmlcov/
+
+# Deployment output
+deploy/
+dist/
+*.tar.gz
+*.zip
