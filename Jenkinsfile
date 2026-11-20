@@ -16,38 +16,69 @@ pipeline {
         stage('Dependency Installation / Build') {
             steps {
                 echo '=== Stage 2: Creating Virtual Environment & Installing Dependencies ==='
-                // Linux / macOS agent execution
-                sh '''
-                    python3 -m venv ${VENV} || python -m venv ${VENV}
-                    . ${VENV}/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
-                '''
+                script {
+                    if (isUnix()) {
+                        sh '''
+                            python3 -m venv ${VENV} || python -m venv ${VENV}
+                            . ${VENV}/bin/activate
+                            pip install --upgrade pip
+                            pip install -r requirements.txt
+                        '''
+                    } else {
+                        bat '''
+                            python -m venv %VENV%
+                            call %VENV%\\Scripts\\activate.bat
+                            python -m pip install --upgrade pip
+                            pip install -r requirements.txt
+                        '''
+                    }
+                }
             }
         }
 
         stage('Automated Test / Validation') {
             steps {
                 echo '=== Stage 3: Running Unit Tests & Validation ==='
-                sh '''
-                    . ${VENV}/bin/activate
-                    pytest test_exporter.py -v --junitxml=test-results.xml
-                '''
+                script {
+                    if (isUnix()) {
+                        sh '''
+                            . ${VENV}/bin/activate
+                            pytest test_exporter.py -v --junitxml=test-results.xml || python3 -m unittest test_exporter.py
+                        '''
+                    } else {
+                        bat '''
+                            call %VENV%\\Scripts\\activate.bat
+                            pytest test_exporter.py -v --junitxml=test-results.xml || python -m unittest test_exporter.py
+                        '''
+                    }
+                }
             }
         }
 
         stage('Deployment Packaging') {
             steps {
                 echo '=== Stage 4: Packaging Deployment Artifacts ==='
-                sh '''
-                    rm -rf deploy
-                    mkdir -p deploy
-                    cp exporter.py deploy/
-                    cp requirements.txt deploy/
-                    echo "Deployment package prepared successfully in deploy/ folder:"
-                    ls -la deploy/
-                '''
-                // Archive artifacts in Jenkins
+                script {
+                    if (isUnix()) {
+                        sh '''
+                            rm -rf deploy
+                            mkdir -p deploy
+                            cp exporter.py deploy/
+                            cp requirements.txt deploy/
+                            echo "Deployment directory contents:"
+                            ls -la deploy/
+                        '''
+                    } else {
+                        bat '''
+                            if exist deploy rmdir /s /q deploy
+                            mkdir deploy
+                            copy /y exporter.py deploy\\
+                            copy /y requirements.txt deploy\\
+                            echo Deployment directory contents:
+                            dir deploy
+                        '''
+                    }
+                }
                 archiveArtifacts artifacts: 'deploy/**', fingerprint: true
             }
         }
@@ -55,7 +86,6 @@ pipeline {
 
     post {
         always {
-            // Publishes test report in Jenkins UI if JUnit plugin is installed
             junit allowEmptyResults: true, testResults: 'test-results.xml'
         }
         success {
